@@ -1,53 +1,39 @@
 import {
-  Input,
-  OnInit,
   NgZone,
   Component,
-  Directive,
   ElementRef,
   AfterViewChecked,
-  ChangeDetectorRef
+  ChangeDetectorRef,
+  AfterViewInit,
+  Inject,
+  PLATFORM_ID
 } from '@angular/core'
+import {
+  CommonModule,
+  isPlatformBrowser
+} from '@angular/common'
+import {
+  FormsModule
+} from '@angular/forms'
 
-@Directive( {
-  selector: '[text] [option.color] [option.auto] [option.duration] [option.multiply]'
-} )
-export class TextShuffleDirective {
+import {
+  TextShuffleDirective
+} from './text-shuffle.directive'
 
-  @Input() public text!: string
-
-  @Input( 'option.auto' ) public auto: boolean = false
-  
-  @Input( 'option.color' ) public color: Array < string > = [
-
-    '#ff3100',
-    '#ff8000',
-    '#ffc600',
-    '#88ff00',
-    '#00ff71',
-    '#00e8ff',
-    '#0084ff',
-    '#3100ff',
-    '#ff00e1',
-    '#ff003e',
-    '#e6e6e6',
-    '#808080',
-    '#333333'
-  ]
-
-  @Input( 'option.duration' ) public duration: number = 500
-
-  @Input( 'option.multiply' ) public multiply: number = 2.0
-}
 
 @Component( {
+  imports: [
+    FormsModule,
+    CommonModule,
+  ],
+  standalone: true,
   selector: 'text-shuffle',
-  templateUrl: './text-shuffle.component.html'
+  templateUrl: './text-shuffle.html',
 } )
-export class TextShuffleComponent extends TextShuffleDirective implements OnInit, AfterViewChecked {
+export class TextShuffleComponent extends TextShuffleDirective implements AfterViewInit, AfterViewChecked {
 
   private chk: any
-  private parent: Element
+  private parent!: Element
   private content: any
   private context!: CanvasRenderingContext2D
   private animation: any
@@ -56,16 +42,13 @@ export class TextShuffleComponent extends TextShuffleDirective implements OnInit
 
   constructor(
 
+    @Inject( PLATFORM_ID ) private platformId: Object,
+
     private zone: NgZone,
     private cdrRef: ChangeDetectorRef,
-    private elementRef: ElementRef
-  ) {
+    private elementRef: ElementRef ) {
 
     super()
-
-    this.cdrRef.detach()
-
-    this.parent = this.elementRef.nativeElement
 
     this.color = this.getShuffle( this.color )
 
@@ -79,91 +62,34 @@ export class TextShuffleComponent extends TextShuffleDirective implements OnInit
     this.animation = {}
   }
 
-  ngOnInit(): void {}
-
-  ngOnLoad(): void {
-
-    try {
-
-      this.content = {
-
-        word: this.getWord,
-        char: this.getCharacter(),
-        prefix: this.getCharacter(),
-        suffix: new Array < string > ()
-      }
-
-      var span = this.parent.querySelector( 'span' )!
-
-      span.textContent = this.text
-
-      let rect = span.getBoundingClientRect()
-
-      let compute = window.getComputedStyle( span )
-
-      this.attribute = {
-
-        line: [],
-        color: compute.color,
-        width: rect.width * this.multiply,
-        height: rect.height * this.multiply,
-        letter: this.getSize( compute.letterSpacing )
-      }
-
-      var canvas = this.parent.querySelector( 'canvas' )!
-
-      canvas.width = this.attribute.width
-
-      canvas.height = this.attribute.height
-
-      canvas.style.width = rect.width + 'px'
-
-      canvas.style.height = rect.height + 'px'
-
-      canvas.style.letterSpacing = this.getSize( compute.letterSpacing, 'px' )
-
-      this.context = canvas.getContext( '2d' )!
-
-      this.context.font = [ compute.fontWeight, this.getSize( compute.fontSize, 'px' ), compute.fontFamily ].join( ' ' )
-
-      this.context.fillStyle = compute.color
-
-      this.context.textBaseline = 'top'
-
-      this.setLine( this.content.word )
-
-      if ( this.auto ) return this.onEnter()
-
-      this.setText()
-
-    } catch ( e ) {
-
-      console.log( e )
-    }
-  }
-
   ngOnDestroy(): void {
 
     clearTimeout( this.animation.change )
 
     this.animation.change = null
 
-    for ( let key in this.subscription ) {
-
-      this.subscription[ key ].unsubscribe()
-    }
+    for ( let key in this.subscription ) this.subscription[ key ].unsubscribe()
   }
 
   ngOnChanges(): void {
 
-    if ( this.text == null || this.text == undefined ) return
+    if ( !this.text || !isPlatformBrowser( this.platformId ) ) return
 
-    this.ngOnLoad()
+    this.setShuffle()
+  }
+
+  ngAfterViewInit(): void {
+
+    if ( !isPlatformBrowser( this.platformId ) ) return
+
+    this.cdrRef.detach()
+
+    this.parent = this.elementRef.nativeElement
   }
 
   ngAfterViewChecked(): void {
 
-    if ( this.text == null || this.text == undefined ) return
+    if ( !this.text || !isPlatformBrowser( this.platformId ) ) return
 
     clearTimeout( this.animation.change )
 
@@ -179,19 +105,20 @@ export class TextShuffleComponent extends TextShuffleDirective implements OnInit
 
         this.chk.change = true
 
-        this.ngOnLoad()
+        this.setShuffle()
 
       }, 100 )
     } )
   }
 
+  /* Get */
   /**
    * Change resolution.
    * @param size Compute size px or em
    * @param suffix Add a suffix
    * @returns 
    */
-  getSize( size: string, suffix?: string ): any {
+  getSize( size: string, suffix ? : string ): any {
 
     let num = ( parseFloat( size.replace( /[px|em]/g, '' ) ) || 0 ) * this.multiply
 
@@ -223,11 +150,12 @@ export class TextShuffleComponent extends TextShuffleDirective implements OnInit
   /**
    * Divide into words
    */
-  get getWord(): Array< string > {
+  get getWord(): Array < string > {
 
     return this.text.split( ' ' )
   }
 
+  /* Set */
   /**
    * Calculate the actual size that is drawn on canvas.
    * @param character Array of letters
@@ -254,9 +182,9 @@ export class TextShuffleComponent extends TextShuffleDirective implements OnInit
           continue
         }
 
-        let pop = line.pop()!
+        let pop = line.pop() !
 
-        join = line.join( ' ' )
+          join = line.join( ' ' )
 
         line = [ pop ]
 
@@ -369,6 +297,64 @@ export class TextShuffleComponent extends TextShuffleDirective implements OnInit
 
       next()
     }
+  }
+
+  setShuffle(): void {
+
+    try {
+
+      this.content = {
+
+        word: this.getWord,
+        char: this.getCharacter(),
+        prefix: this.getCharacter(),
+        suffix: new Array < string > ()
+      }
+
+      var span = this.parent.querySelector( 'span' ) !
+
+        span.textContent = this.text
+
+      let rect = span.getBoundingClientRect()
+
+      let compute = window.getComputedStyle( span )
+
+      this.attribute = {
+
+        line: [],
+        color: compute.color,
+        width: rect.width * this.multiply,
+        height: rect.height * this.multiply,
+        letter: this.getSize( compute.letterSpacing )
+      }
+
+      var canvas = this.parent.querySelector( 'canvas' ) !
+
+        canvas.width = this.attribute.width
+
+      canvas.height = this.attribute.height
+
+      canvas.style.width = rect.width + 'px'
+
+      canvas.style.height = rect.height + 'px'
+
+      canvas.style.letterSpacing = this.getSize( compute.letterSpacing, 'px' )
+
+      this.context = canvas.getContext( '2d' ) !
+
+        this.context.font = [ compute.fontWeight, this.getSize( compute.fontSize, 'px' ), compute.fontFamily ].join( ' ' )
+
+      this.context.fillStyle = compute.color
+
+      this.context.textBaseline = 'top'
+
+      this.setLine( this.content.word )
+
+      if ( this.auto ) return this.onEnter()
+
+      this.setText()
+
+    } catch {}
   }
 
   /**

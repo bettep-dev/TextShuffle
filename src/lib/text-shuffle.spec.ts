@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { TextShuffleComponent } from './text-shuffle.component';
+import { TextShuffleComponent } from './text-shuffle';
 
 describe('TextShuffleComponent', () => {
   let component: TextShuffleComponent;

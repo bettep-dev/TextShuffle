@@ -1,18 +1,27 @@
 import {
   NgModule
 } from '@angular/core'
+import {
+  FormsModule
+} from '@angular/forms'
+import {
+  CommonModule
+} from '@angular/common'
 
 import {
   TextShuffleComponent
-} from './text-shuffle.component'
+} from './text-shuffle'
 
-@NgModule({
-  declarations: [
+@NgModule( {
+  imports: [
+
+    FormsModule,
+    CommonModule,
+
     TextShuffleComponent
   ],
-  imports: [],
   exports: [
     TextShuffleComponent
   ]
-})
+} )
 export class TextShuffleModule {}

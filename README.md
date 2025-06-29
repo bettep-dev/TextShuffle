@@ -18,34 +18,37 @@ npm install --save text-shuffle
 
 ## Usage
 
-Import into your @NgModule.
 ```typescript
-import { NgModule } from '@angular/core'
-import { FormsModule } from '@angular/forms'
-import { TextShuffleModule } from 'text-shuffle'
+import {
+  FormsModule
+} from '@angular/forms'
+import {
+  CommonModule
+} from '@angular/common'
 
-@NgModule({
+import {
+  TextShuffleModule or TextShuffleComponent
+} from 'text-shuffle'
+
+@Component( {
 
   imports: [
 
     FormsModule,
-    TextShuffleModule
+    CommonModule,
+
+    TextShuffleModule or TextShuffleComponent
   ],
-  declarations: []
-})
-export class MyModule {}
-```
-
-<br><br>
-
-Then, using your component.
-```typescript
-@Component( {
-
-  selector: 'app',
+  standalone: true,
+  selector: 'app-my-component',
   template: '<text-shuffle [text]="text" [option.auto]="option.auto" [option.color]="option.color" [option.duration]="option.duration" [option.multiply]="option.multiply"></text-shuffle>'
 } )
-export class AppComponent {
+export class MyComponent {
+
+  public color: string
+
+  /* Optional */
+  this.palette = [ { code: '#ffffff', name: 'White' } ... ]
 
   /* require */
   public text: string = 'TextShuffle, Put your mouse pointer here!'
@@ -94,6 +97,7 @@ export class AppComponent {
 `1.0.0` : Initial release.
 `1.0.4` : Change demo address.
 `2.0.0` : Remove package dependency.
+`2.0.1` : Standalone / SSR compatible.
 
 <br><br>
 
