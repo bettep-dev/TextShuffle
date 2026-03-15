@@ -5,16 +5,12 @@ import {
   AfterViewChecked,
   ChangeDetectorRef,
   AfterViewInit,
-  Inject,
+  inject,
+  effect,
+  untracked,
   PLATFORM_ID
 } from '@angular/core'
-import {
-  CommonModule,
-  isPlatformBrowser
-} from '@angular/common'
-import {
-  FormsModule
-} from '@angular/forms'
+import { isPlatformBrowser } from '@angular/common';
 
 import {
   TextShuffleDirective
@@ -22,60 +18,46 @@ import {
 
 
 @Component( {
-  imports: [
-    FormsModule,
-    CommonModule,
-  ],
-  standalone: true,
   selector: 'text-shuffle',
   templateUrl: './text-shuffle.html',
 } )
 export class TextShuffleComponent extends TextShuffleDirective implements AfterViewInit, AfterViewChecked {
 
-  private chk: any
+  private platformId = inject( PLATFORM_ID )
+  private zone = inject( NgZone )
+  private cdrRef = inject( ChangeDetectorRef )
+  private elementRef = inject( ElementRef )
+
+  private shuffledColor: Array < string > = []
+
+  private changeReady = false
+
   private parent!: Element
-  private content: any
+  private content: any = {}
   private context!: CanvasRenderingContext2D
-  private animation: any
+  private animation: any = {}
   private attribute: any
   private subscription: any
 
-  constructor(
+  private textEffect = effect( () => {
 
-    @Inject( PLATFORM_ID ) private platformId: Object,
+    const t = this.text()
+    this.color()
 
-    private zone: NgZone,
-    private cdrRef: ChangeDetectorRef,
-    private elementRef: ElementRef ) {
+    if ( !t || !isPlatformBrowser( this.platformId ) ) return
 
-    super()
-
-    this.color = this.getShuffle( this.color )
-
-    this.chk = {
-
-      change: false
-    }
-
-    this.content = {}
-
-    this.animation = {}
-  }
+    untracked( () => this.setShuffle() )
+  } )
 
   ngOnDestroy(): void {
 
     clearTimeout( this.animation.change )
+    clearTimeout( this.animation.timeout )
+    cancelAnimationFrame( this.animation.frame )
 
-    this.animation.change = null
+    this.animation = {}
 
     for ( let key in this.subscription ) this.subscription[ key ].unsubscribe()
-  }
-
-  ngOnChanges(): void {
-
-    if ( !this.text || !isPlatformBrowser( this.platformId ) ) return
-
-    this.setShuffle()
   }
 
   ngAfterViewInit(): void {
@@ -89,7 +71,7 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
   ngAfterViewChecked(): void {
 
-    if ( !this.text || !isPlatformBrowser( this.platformId ) ) return
+    if ( !this.text() || !isPlatformBrowser( this.platformId ) ) return
 
     clearTimeout( this.animation.change )
 
@@ -97,13 +79,13 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
     this.zone.runOutsideAngular( _ => {
 
-      if ( this.chk.change ) return
+      if ( this.changeReady ) return
 
       this.cdrRef.detectChanges()
 
       this.animation.change = setTimeout( ( _: any ) => {
 
-        this.chk.change = true
+        this.changeReady = true
 
         this.setShuffle()
 
@@ -116,11 +98,11 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
    * Change resolution.
    * @param size Compute size px or em
    * @param suffix Add a suffix
-   * @returns 
+   * @returns
    */
   getSize( size: string, suffix ? : string ): any {
 
-    let num = ( parseFloat( size.replace( /[px|em]/g, '' ) ) || 0 ) * this.multiply
+    let num = ( parseFloat( size.replace( /(px|em)/g, '' ) ) || 0 ) * this.multiply()
 
     if ( suffix ) return num + suffix
 
@@ -130,7 +112,7 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
   /**
    * Shuffle strings.
    * @param shuffle Array of letters
-   * @returns 
+   * @returns
    */
   getShuffle( shuffle: Array < string > ): Array < string > {
 
@@ -140,9 +122,9 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
   /**
    * String to character array
    * @param char String text
-   * @returns 
+   * @returns
    */
-  getCharacter( char: string = this.text ): Array < string > {
+  getCharacter( char: string = this.text() ): Array < string > {
 
     return char.split( '' )
   }
@@ -152,14 +134,14 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
    */
   get getWord(): Array < string > {
 
-    return this.text.split( ' ' )
+    return this.text().split( ' ' )
   }
 
   /* Set */
   /**
    * Calculate the actual size that is drawn on canvas.
    * @param character Array of letters
-   * @param line 
+   * @param line
    */
   setLine( character: Array < string > , line: Array < string > = [] ) {
 
@@ -190,20 +172,7 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
         measure = this.context.measureText( join )
 
-        this.attribute.line.push( {
-
-          box: {
-
-            ascent: measure.actualBoundingBoxAscent,
-            descent: measure.actualBoundingBoxDescent
-          },
-          font: {
-
-            ascent: measure.fontBoundingBoxAscent,
-            descent: measure.fontBoundingBoxDescent
-          },
-          length: join.length
-        } )
+        this.attribute.line.push( this.buildLineMetric( measure, join.length ) )
       }
     }
 
@@ -213,20 +182,25 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
       let measure = this.context.measureText( join )
 
-      this.attribute.line.push( {
+      this.attribute.line.push( this.buildLineMetric( measure, join.length ) )
+    }
+  }
 
-        box: {
+  private buildLineMetric( measure: TextMetrics, length: number ) {
 
-          ascent: measure.actualBoundingBoxAscent,
-          descent: measure.actualBoundingBoxDescent
-        },
-        font: {
+    return {
 
-          ascent: measure.fontBoundingBoxAscent,
-          descent: measure.fontBoundingBoxDescent
-        },
-        length: join.length
-      } )
+      box: {
+
+        ascent: measure.actualBoundingBoxAscent,
+        descent: measure.actualBoundingBoxDescent
+      },
+      font: {
+
+        ascent: measure.fontBoundingBoxAscent,
+        descent: measure.fontBoundingBoxDescent
+      },
+      length
     }
   }
 
@@ -235,9 +209,9 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
    */
   setText(): void {
 
-    let clone = JSON.parse( JSON.stringify( this.attribute.line ) )
+    let lineIdx = 0
 
-    let line = clone.shift()
+    let line = this.attribute.line[ lineIdx ]
 
     var l = 0
 
@@ -253,7 +227,7 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
           let size = line.font.descent - line.font.ascent
 
-          line = clone.shift()
+          line = this.attribute.line[ ++lineIdx ]
 
           x = 0
 
@@ -285,11 +259,11 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
     for ( let char of this.content.suffix ) {
 
-      if ( idx > this.color.length ) idx = 0
+      if ( idx >= this.shuffledColor.length ) idx = 0
 
       let measure = this.context.measureText( char )
 
-      this.context.fillStyle = this.color[ idx++ ]
+      this.context.fillStyle = this.shuffledColor[ idx++ ]
 
       this.context.fillText( char, x, y )
 
@@ -303,6 +277,8 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
     try {
 
+      this.shuffledColor = this.getShuffle( [ ...this.color() ] )
+
       this.content = {
 
         word: this.getWord,
@@ -313,7 +289,7 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
       var span = this.parent.querySelector( 'span' ) !
 
-        span.textContent = this.text
+        span.textContent = this.text()
 
       let rect = span.getBoundingClientRect()
 
@@ -323,8 +299,8 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
         line: [],
         color: compute.color,
-        width: rect.width * this.multiply,
-        height: rect.height * this.multiply,
+        width: rect.width * this.multiply(),
+        height: rect.height * this.multiply(),
         letter: this.getSize( compute.letterSpacing )
       }
 
@@ -350,7 +326,12 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
       this.setLine( this.content.word )
 
-      if ( this.auto ) return this.onEnter()
+      if ( this.auto() ) {
+
+        this.animation.interval = this.duration() / this.text().length
+
+        return this.onEnter()
+      }
 
       this.setText()
 
@@ -362,7 +343,7 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
    */
   onEnter(): void {
 
-    if ( this.chk.change == false ) return
+    if ( !this.changeReady ) return
 
     this.content = {
 
@@ -372,6 +353,8 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
       suffix: this.getCharacter()
     }
 
+    this.animation.interval = this.animation.interval || this.duration() / this.text().length
+
     this.animation.frame = window.requestAnimationFrame( _ => this.onUpdate() )
 
     this.onTimer()
@@ -379,7 +362,7 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
   onLeave(): void {
 
-    if ( this.chk.change == false ) return
+    if ( !this.changeReady ) return
 
     this.content.prefix = this.getCharacter()
 
@@ -412,7 +395,7 @@ export class TextShuffleComponent extends TextShuffleDirective implements AfterV
 
         this.onLeave()
       }
-    }, this.duration / this.text.length )
+    }, this.animation.interval )
   }
 
   onUpdate(): void {

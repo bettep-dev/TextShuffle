@@ -3,4 +3,3 @@
  */
 
 export * from './lib/text-shuffle'
-export * from './lib/text-shuffle.module'

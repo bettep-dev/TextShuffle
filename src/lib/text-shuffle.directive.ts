@@ -1,20 +1,19 @@
 import {
-  Input,
   Directive,
+  input,
 } from "@angular/core"
 
 @Directive( {
 
   selector: '[text], [option.color], [option.auto], [option.duration], [option.multiply]',
-  standalone: true
 } )
 export class TextShuffleDirective {
 
-  @Input () public text!: string
+  public text = input.required<string>()
 
-  @Input ( 'option.auto' ) public auto: boolean = false
+  public auto = input<boolean>( false, { alias: 'option.auto' } )
 
-  @Input ( 'option.color' ) public color: Array < string > = [
+  public color = input<Array < string >>( [
 
     '#ff3100',
     '#ff8000',
@@ -29,9 +28,9 @@ export class TextShuffleDirective {
     '#e6e6e6',
     '#808080',
     '#333333'
-  ]
+  ], { alias: 'option.color' } )
 
-  @Input ( 'option.duration' ) public duration: number = 500
+  public duration = input<number>( 500, { alias: 'option.duration' } )
 
-  @Input ( 'option.multiply' ) public multiply: number = 2.0
+  public multiply = input<number>( 2.0, { alias: 'option.multiply' } )
 }
