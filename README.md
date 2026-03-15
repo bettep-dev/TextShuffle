@@ -1,112 +1,116 @@
-## TextShuffle Angular Library.
+# TextShuffle
 
-A library that randomly mixes input strings and outputs them from the front digit.
+[![npm version](https://img.shields.io/npm/v/text-shuffle.svg)](https://www.npmjs.com/package/text-shuffle)
+[![license](https://img.shields.io/npm/l/text-shuffle.svg)](https://github.com/Hongdaesik/TextShuffle/blob/master/LICENSE)
+[![Angular](https://img.shields.io/badge/Angular-21+-dd0031.svg)](https://angular.dev)
 
-You can check out the demo <a href="https://bettep.org/text-shuffle">here</a>.
+A lightweight Angular library that renders canvas-based text shuffle animations. Characters are randomly mixed with vibrant colors and progressively revealed in order.
 
-![Excute](https://raw.githubusercontent.com/Hongdaesik/TextShuffle/master/DEMO.gif)
+[Live Demo](https://bettep.org/text-shuffle)
 
-<br><br>
+![Demo](https://raw.githubusercontent.com/Hongdaesik/TextShuffle/master/DEMO.gif)
+
+---
 
 ## Installation
 
 ```bash
-npm install --save text-shuffle 
+npm install text-shuffle
 ```
 
-<br><br>
+---
 
-## Usage
+## Quick Start
 
 ```typescript
-import {
-  FormsModule
-} from '@angular/forms'
-import {
-  CommonModule
-} from '@angular/common'
+import { Component } from '@angular/core'
+import { TextShuffleComponent } from 'text-shuffle'
 
-import {
-  TextShuffleModule or TextShuffleComponent
-} from 'text-shuffle'
-
-@Component( {
-
-  imports: [
-
-    FormsModule,
-    CommonModule,
-
-    TextShuffleModule or TextShuffleComponent
-  ],
-  standalone: true,
-  selector: 'app-my-component',
-  template: '<text-shuffle [text]="text" [option.auto]="option.auto" [option.color]="option.color" [option.duration]="option.duration" [option.multiply]="option.multiply"></text-shuffle>'
-} )
-export class MyComponent {
-
-  public color: string
-
-  /* Optional */
-  this.palette = [ { code: '#ffffff', name: 'White' } ... ]
-
-  /* require */
-  public text: string = 'TextShuffle, Put your mouse pointer here!'
-
-  /* optional */
-  public option: any = {
-
-    auto: true,
-    color: [
-
-      '#ff3100',
-      '#ff8000',
-      '#ffc600',
-      '#88ff00',
-      '#00ff71',
-      '#00e8ff',
-      '#0084ff',
-      '#3100ff',
-      '#ff00e1',
-      '#ff003e',
-      '#e6e6e6',
-      '#808080',
-      '#333333'
-    ],
-    duration: 500,
-    multiply: 2.0
-  }
+@Component({
+  selector: 'app-example',
+  imports: [TextShuffleComponent],
+  template: `
+    <text-shuffle
+      [text]="text"
+      [option.auto]="true"
+      [option.duration]="500"
+    />
+  `
+})
+export class ExampleComponent {
+  text = 'Hover me to see the magic!'
 }
 ```
 
-<br><br>
+---
 
-## Parameter
-|Name|Type|Description|Default|
-|---|---|---|---|
-|[text]|string|String to output.|"''"|
-|[option.auto]|boolean|Whether the shuffle animation is automatic.|`true`|
-|[option.color]|Array|Text transformation color.|`['#ff3100','#ff8000','#ffc600','#88ff00','#00ff71','#00e8ff','#0084ff','#3100ff''#ff00e1','#ff003e','#e6e6e6','#808080','#333333']`|
-|[option.duration]|number|Time of animation operation.|500|
-|[option.multiply]|number|Size scale drawn on the canvas.|2.0|
+## API
 
-<br><br>
+### Inputs
 
-## Change Log
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `[text]` | `string` | **required** | The text string to display and animate. |
+| `[option.auto]` | `boolean` | `false` | When `true`, the shuffle animation plays automatically on load. |
+| `[option.color]` | `string[]` | 13 preset colors | Array of hex color codes used for the shuffle effect. |
+| `[option.duration]` | `number` | `500` | Total duration of the reveal animation in milliseconds. |
+| `[option.multiply]` | `number` | `2.0` | Canvas resolution multiplier for high-DPI displays. |
 
-`1.0.0` : Initial release.
-`1.0.4` : Change demo address.
-`2.0.0` : Remove package dependency.
-`2.0.1` : Standalone / SSR compatible.
+### Default Colors
 
-<br><br>
+```
+#ff3100  #ff8000  #ffc600  #88ff00  #00ff71
+#00e8ff  #0084ff  #3100ff  #ff00e1  #ff003e
+#e6e6e6  #808080  #333333
+```
+
+---
+
+## Advanced Usage
+
+```typescript
+@Component({
+  selector: 'app-custom',
+  imports: [TextShuffleComponent],
+  template: `
+    <text-shuffle
+      [text]="title"
+      [option.auto]="false"
+      [option.color]="colors"
+      [option.duration]="800"
+      [option.multiply]="3.0"
+    />
+  `,
+  styles: [`
+    text-shuffle {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+  `]
+})
+export class CustomComponent {
+  title = 'Custom Shuffle Effect'
+  colors = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899']
+}
+```
+
+> The component inherits `font-size`, `font-weight`, `color`, and `letter-spacing` from its parent element.
+
+---
+
+## Changelog
+
+| Version | Description |
+|---------|-------------|
+| `2.0.2` | Angular 21 upgrade. Signal inputs, `inject()`, `effect()` migration. |
+| `2.0.1` | Standalone / SSR compatible. |
+| `2.0.0` | Remove package dependency. |
+| `1.0.4` | Change demo address. |
+| `1.0.0` | Initial release. |
+
+---
 
 ## License
 
-MIT
-
-<br><br>
-
-## Other programs
-
-<https://bettep.org>
+[MIT](https://opensource.org/licenses/MIT) &copy; [HONG DAESIK](https://bettep.org)
